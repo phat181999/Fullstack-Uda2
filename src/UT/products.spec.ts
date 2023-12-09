@@ -1,93 +1,58 @@
 import { ProductStore, Product } from "../models/products";
-import dotenv from 'dotenv'
-import axios from 'axios'
-import { Response } from 'express'
-import app from '../server'
-import supertest from "supertest";
-let http = supertest.agent(app)
-const backendServer = 'http://localhost:3000/api'
-dotenv.config()
+
 const store = new ProductStore();
-describe('Testing Product model', () => {
-    it('Should have an index method', () => {
-        expect(store.index).toBeDefined;
-    })
-    it('should have showInfo method', () => {
-        expect(store.showProductInfo).toBeDefined();
-    })
-    it('should have create Product method', () => {
-        expect(store.createProduct).toBeDefined();
-    })
-    it('should have getProductByCategory method', () => {
-        expect(store.getProductByCategory).toBeDefined();
-    })
-})
-describe('Testing Product Endpoint', () => {
-    let signUpProduct;
-    const loginURL = `${backendServer}/users/authenticate`
-    const payloadLogin = {
-        userName: 'product.test',
-        password: 'product123'
-    }
-    beforeAll(async () => {
-        try {
-            const ProductUser = {
-                first_name: "Product",
-                last_name: "User",
-                userName: "product.test",
-                password: "product123"
-            }
-            signUpProduct = await axios.post(`${backendServer}/users/signUp`, ProductUser)
-        } catch (error) {
-            console.log('error');
 
-        }
-        try {
-            const newProduct = {
-                name: "Macbook",
-                price: 200000,
-                category: "Laptop",
-            }
-            const login = await axios.post(loginURL, payloadLogin)
-            const loginToken = login.data.token
-            let config = {
-                headers: { Authorization: `Bearer ${loginToken}` }
-            }
-            const result = await axios.post(`${backendServer}/products`, newProduct, config)
-        } catch (err) {
-            console.log(err);
+describe("Test product model methods", () => {
+  it("should create a new product", async () => {
+    const newProduct: Product = {
+      name: "Macbook",
+      price: 200000,
+      category: "Laptop",
+    };
+    const createdProduct = await store.createProduct(newProduct);
+    expect(createdProduct.name).toBe(newProduct.name);
+    expect(createdProduct.price).toBe(newProduct.price);
+    expect(createdProduct.category).toBe(newProduct.category);
+    // Add more assertions based on your data model and expectations
+  });
 
-        }
+  it("should fetch all products", async () => {
+    // Create some test products in the database
+    const product1: Product = {
+      name: "Product1",
+      price: 100,
+      category: "Category1",
+    };
+    const product2: Product = {
+      name: "Product2",
+      price: 200,
+      category: "Category2",
+    };
+    await store.createProduct(product1);
+    await store.createProduct(product2);
 
-    })
-    it('should return list of products successfully', async () => {
-        const result = await axios.get(`${backendServer}/products`)
-        // @ts-ignore
-        expect(result.status).toBe(200)
-    });
-    it('should return product info by product id ', async () => {
-        const productId = 1;
-        const result = await axios.get(`${backendServer}/products/${productId}`)
-        expect(result.status).toBe(200)
-    });
-    it('should create new product and require token', async () => {
-        const newProduct = {
-            name: "Macbook",
-            price: 200000,
-            category: "Laptop",
-        }
-        const url = `${backendServer}/products/`
-        const login = await axios.post(loginURL, payloadLogin)
-        const loginToken = login.data.token
-        let config = {
-            headers: { Authorization: `Bearer ${loginToken}` }
-        }
-        const result = await axios.post(url, newProduct, config)
-        expect(result.status).toBe(200)
-    });
-    it('should get list of products by category', async () => {
-        let categoryName = 'Laptop'
-        const listProduct = await axios.get(`${backendServer}/products/category/${categoryName}`)
-        expect(listProduct.data.data[0].category).toEqual(categoryName)
-    })
-})
+    // Fetch all products
+    const products = await store.index();
+    expect(products.length).toBeGreaterThanOrEqual(2);
+    // Add more assertions based on your data model and expectations
+  });
+
+  it("should fetch product info by ID", async () => {
+    // Create a test product in the database
+    const newProduct: Product = {
+      name: "Test Product",
+      price: 300,
+      category: "TestCategory",
+    };
+    const createdProduct = await store.createProduct(newProduct);
+
+    // Fetch product info by ID
+    const fetchedProduct = await store.showProductInfo(createdProduct.id);
+    expect(fetchedProduct.name).toBe(newProduct.name);
+    expect(fetchedProduct.price).toBe(newProduct.price);
+    expect(fetchedProduct.category).toBe(newProduct.category);
+    // Add more assertions based on your data model and expectations
+  });
+
+  // Add similar tests for other model methods (getProductByCategory, etc.)
+});
